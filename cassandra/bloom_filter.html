@@ -33,7 +33,7 @@
 
 
         
-    <div class="book"  data-level="2.2" data-basepath=".." data-revision="1417673754421">
+    <div class="book"  data-level="2.2" data-basepath=".." data-revision="1417684833363">
     
 
 <div class="book-summary">
@@ -255,68 +255,86 @@
                 <div class="page-inner">
                 
                 
-                    <section class="normal" id="section-gitbook_378">
+                    <section class="normal" id="section-gitbook_2861">
                     
                         <h1 id="bloom-filter">Bloom Filter实现</h1>
 <p><img src="images/bloomfilter_hierarchy.png" alt="Bloom Filter 类结构图"></p>
-<ol>
-<li><p>根据CFMetaData中的bloomFilterFpChance和Key的个数，计算出<code>BloomSpecification</code>从而创建BloomFilter． FilterFactory创建BloomFilter, 对于OffHeap内存的创建，修改, 获取，参考OffHeap一节</p>
-<pre><code class="lang-java"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">BloomSpecification</span>
-</span>{
-  <span class="hljs-keyword">final</span> <span class="hljs-keyword">int</span> K; <span class="hljs-comment">// number of hash functions.</span>
-  <span class="hljs-keyword">final</span> <span class="hljs-keyword">int</span> bucketsPerElement;
-}
+<h2 id="bloomfilter">创建BloomFilter</h2>
+<p>根据CFMetaData中的bloomFilterFpChance和Key的个数，计算出<code>BloomSpecification</code>从而创建BloomFilter． FilterFactory创建BloomFilter, 对于OffHeap内存的创建，修改, 获取，参考OffHeap一节</p>
+<pre><code class="lang-java"> <span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">BloomSpecification</span>
+ </span>{
+      <span class="hljs-keyword">final</span> <span class="hljs-keyword">int</span> K; <span class="hljs-comment">// number of hash functions.</span>
+      <span class="hljs-keyword">final</span> <span class="hljs-keyword">int</span> bucketsPerElement;
+ }
 
-<span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> IFilter <span class="hljs-title">getFilter</span><span class="hljs-params">(<span class="hljs-keyword">long</span> numElements, <span class="hljs-keyword">double</span> maxFalsePosProbability, <span class="hljs-keyword">boolean</span> offheap)</span>
-</span>{
-  <span class="hljs-keyword">int</span> bucketsPerElement = BloomCalculations.maxBucketsPerElement(numElements);
-  BloomCalculations.BloomSpecification spec = BloomCalculations.computeBloomSpec(bucketsPerE  lement, maxFalsePosProbability);
-  <span class="hljs-function"><span class="hljs-keyword">return</span> <span class="hljs-title">createFilter</span><span class="hljs-params">(spec.K, numElements, spec.bucketsPerElement, offheap)</span></span>;
-}
+ <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> IFilter <span class="hljs-title">getFilter</span><span class="hljs-params">(<span class="hljs-keyword">long</span> numElements, <span class="hljs-keyword">double</span> maxFalsePosProbability, <span class="hljs-keyword">boolean</span> offheap)</span>
+ </span>{
+      <span class="hljs-keyword">int</span> bucketsPerElement = BloomCalculations.maxBucketsPerElement(numElements);
+      BloomCalculations.BloomSpecification spec = BloomCalculations.computeBloomSpec(bucketsPerE  lement, maxFalsePosProbability);
+      <span class="hljs-function"><span class="hljs-keyword">return</span> <span class="hljs-title">createFilter</span><span class="hljs-params">(spec.K, numElements, spec.bucketsPerElement, offheap)</span></span>;
+ }
 
-<span class="hljs-function"><span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> IFilter <span class="hljs-title">createFilter</span><span class="hljs-params">(<span class="hljs-keyword">int</span> hash, <span class="hljs-keyword">long</span> numElements, <span class="hljs-keyword">int</span> bucketsPer, <span class="hljs-keyword">boolean</span> offheap)</span>
-</span>{
- <span class="hljs-keyword">long</span> numBits = (numElements * bucketsPer) + BITSET_EXCESS;
- IBitSet bitset = offheap ? <span class="hljs-keyword">new</span> OffHeapBitSet(numBits) : <span class="hljs-keyword">new</span> OpenBitSet(numBits);
- <span class="hljs-function"><span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> <span class="hljs-title">Murmur3BloomFilter</span><span class="hljs-params">(hash, bitset)</span></span>;
-}
+ <span class="hljs-function"><span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> IFilter <span class="hljs-title">createFilter</span><span class="hljs-params">(<span class="hljs-keyword">int</span> hash, <span class="hljs-keyword">long</span> numElements, <span class="hljs-keyword">int</span> bucketsPer, <span class="hljs-keyword">boolean</span> offheap)</span>
+ </span>{
+     <span class="hljs-keyword">long</span> numBits = (numElements * bucketsPer) + BITSET_EXCESS;
+     IBitSet bitset = offheap ? <span class="hljs-keyword">new</span> OffHeapBitSet(numBits) : <span class="hljs-keyword">new</span> OpenBitSet(numBits);
+     <span class="hljs-function"><span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> <span class="hljs-title">Murmur3BloomFilter</span><span class="hljs-params">(hash, bitset)</span></span>;
+ }
 </code></pre>
-</li>
-<li><p>在BloomFilter中对每个Key计算hash值，存入OffHeapBitSet.</p>
-<pre><code class="lang-java"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">add</span><span class="hljs-params">(ByteBuffer key)</span>
-</span>{
-  <span class="hljs-keyword">long</span>[] indexes = indexes(key);
-  <span class="hljs-keyword">for</span> (<span class="hljs-keyword">int</span> i = <span class="hljs-number">0</span>; i &lt; hashCount; i++)
-  {
-      bitset.set(indexes[i]);
-  }
-}
+<h2 id="keyhashoffheapbitset">对每个Key计算hash值，存入OffHeapBitSet.</h2>
+<p> <img src="images/BloomFilterAddCallStack.png" alt="BloomFilter add callstack"></p>
+<p>　1.　在创建IndexSummary时，Filter.db不存在时<br/>
+　2.　在往Cassandra写入数据时．</p>
+<pre><code class="lang-java"> <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">add</span><span class="hljs-params">(ByteBuffer key)</span>
+ </span>{
+      <span class="hljs-keyword">long</span>[] indexes = indexes(key);
+      <span class="hljs-keyword">for</span> (<span class="hljs-keyword">int</span> i = <span class="hljs-number">0</span>; i &lt; hashCount; i++)
+      {
+          bitset.set(indexes[i]);
+      }
+ }
 
-<span class="hljs-comment">// note that this method uses the threadLocal that may be longer than hashCount</span>
-<span class="hljs-comment">// to avoid generating a lot of garbage since stack allocation currently does not support stores</span>
-<span class="hljs-comment">// (CASSANDRA-6609).  it returns the array so that the caller does not need to perform</span>
-<span class="hljs-comment">// a second threadlocal lookup.</span>
-<span class="hljs-keyword">private</span> <span class="hljs-keyword">long</span>[] indexes(ByteBuffer key)
-{
-   <span class="hljs-comment">// we use the same array both for storing the hash result, and for storing the indexes we return,</span>
-   <span class="hljs-comment">// so that we do not need to allocate two arrays.</span>
-   <span class="hljs-keyword">long</span>[] indexes = reusableIndexes.get();
-   hash(key, key.position(), key.remaining(), <span class="hljs-number">0</span>L, indexes);
-   setIndexes(indexes[<span class="hljs-number">0</span>], indexes[<span class="hljs-number">1</span>], hashCount, bitset.capacity(), indexes);
-   <span class="hljs-keyword">return</span> indexes;
-}
-
-<span class="hljs-function"><span class="hljs-keyword">private</span> <span class="hljs-keyword">void</span> <span class="hljs-title">setIndexes</span><span class="hljs-params">(<span class="hljs-keyword">long</span> base, <span class="hljs-keyword">long</span> inc, <span class="hljs-keyword">int</span> count, <span class="hljs-keyword">long</span> max, <span class="hljs-keyword">long</span>[] results)</span>
-</span>{
-  <span class="hljs-keyword">for</span> (<span class="hljs-keyword">int</span> i = <span class="hljs-number">0</span>; i &lt; count; i++)
+ <span class="hljs-comment">// note that this method uses the threadLocal that may be longer than hashCount</span>
+ <span class="hljs-comment">// to avoid generating a lot of garbage since stack allocation currently does not support stores</span>
+ <span class="hljs-comment">// (CASSANDRA-6609). it returns the array so that the caller does not need to perform</span>
+ <span class="hljs-comment">// a second threadlocal lookup.</span>
+ <span class="hljs-keyword">private</span> <span class="hljs-keyword">long</span>[] indexes(ByteBuffer key)
   {
-      results[i] = FBUtilities.abs(base % max);
-      base += inc;
+       <span class="hljs-keyword">long</span>[] indexes = reusableIndexes.get();
+       hash(key, key.position(), key.remaining(), <span class="hljs-number">0</span>L, indexes);
+       setIndexes(indexes[<span class="hljs-number">0</span>], indexes[<span class="hljs-number">1</span>], hashCount, bitset.capacity(), indexes);
+       <span class="hljs-keyword">return</span> indexes;
   }
-}
+
+  <span class="hljs-function"><span class="hljs-keyword">private</span> <span class="hljs-keyword">void</span> <span class="hljs-title">setIndexes</span><span class="hljs-params">(<span class="hljs-keyword">long</span> base, <span class="hljs-keyword">long</span> inc, <span class="hljs-keyword">int</span> count, <span class="hljs-keyword">long</span> max, <span class="hljs-keyword">long</span>[] results)</span>
+  </span>{
+      <span class="hljs-keyword">for</span> (<span class="hljs-keyword">int</span> i = <span class="hljs-number">0</span>; i &lt; count; i++)
+      {
+          results[i] = FBUtilities.abs(base % max);
+          base += inc;
+      }
+  }
 </code></pre>
-</li>
-</ol>
+<h2 id="bloomfilter">查询时对BloomFilter的使用</h2>
+<p>　<img src="images/BloomFilterPresentCallStack.png" alt="BloomFilter ispresent callstack"></p>
+<pre><code class="lang-java"> <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">final</span> <span class="hljs-keyword">boolean</span> <span class="hljs-title">isPresent</span><span class="hljs-params">(ByteBuffer key)</span>
+ </span>{
+     <span class="hljs-keyword">long</span>[] indexes = indexes(key);
+     <span class="hljs-keyword">for</span> (<span class="hljs-keyword">int</span> i = <span class="hljs-number">0</span>; i &lt; hashCount; i++)
+     {
+         <span class="hljs-keyword">if</span> (!bitset.get(indexes[i]))
+         {
+             <span class="hljs-keyword">return</span> <span class="hljs-keyword">false</span>;
+         }
+     }
+     <span class="hljs-keyword">return</span> <span class="hljs-keyword">true</span>;
+ }
+</code></pre>
+<h2 id="filterdb">对Filter.db的存取</h2>
+<p><img src="images/BloomFilterSerializeStack.png" alt="BloomFilter serialize"></p>
+<p>从图中可以看到对Filter.db的存储是在每个SStable关闭的时候</p>
+<p><img src="images/BloomFilterDescrializeStack.png" alt="BloomFilter serialize"></p>
+<p>在打开每个SStable的时候，Filter.db存在，CFMetaData中的bloomFilterFPChance没有改变，就会load Filter.db到BloomFilter.</p>
 
                     
                     </section>
