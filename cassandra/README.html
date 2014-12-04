@@ -4,7 +4,7 @@
     <head>
         
         <meta charset="UTF-8">
-        <title> | Cassandra</title>
+        <title>Cassandra查询过程 | Cassandra</title>
         <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
         <meta name="description" content="">
         <meta name="generator" content="GitBook 1.0.3">
@@ -17,6 +17,8 @@
         
     
     
+    
+    <link rel="next" href="../cassandra/columnfamilystore.html" />
     
     
     <link rel="prev" href="../index.html" />
@@ -31,7 +33,7 @@
 
 
         
-    <div class="book"  data-level="1" data-basepath=".." data-revision="1417597240273">
+    <div class="book"  data-level="1" data-basepath=".." data-revision="1417672279190">
     
 
 <div class="book-summary">
@@ -55,7 +57,7 @@
                     <a href="../index.html">
                         <i class="fa fa-check"></i>
                         
-                         Introduction
+                         启动Cassandra
                     </a>
                 
             
@@ -71,7 +73,77 @@
                         
                             <b>1.</b>
                         
-                         
+                         Cassandra查询过程
+                    </a>
+                
+            
+            
+            <ul class="articles">
+                
+    
+        
+        <li class="chapter " data-level="1.1" data-path="cassandra/columnfamilystore.html">
+            
+                
+                    <a href="../cassandra/columnfamilystore.html">
+                        <i class="fa fa-check"></i>
+                        
+                            <b>1.1.</b>
+                        
+                         创建ColumnFamilyStore
+                    </a>
+                
+            
+            
+        </li>
+    
+        
+        <li class="chapter " data-level="1.2" data-path="cassandra/bloom_filter.html">
+            
+                
+                    <a href="../cassandra/bloom_filter.html">
+                        <i class="fa fa-check"></i>
+                        
+                            <b>1.2.</b>
+                        
+                         Bloom Filter实现
+                    </a>
+                
+            
+            
+        </li>
+    
+        
+        <li class="chapter " data-level="1.3" data-path="cassandra/cassandra_cache.html">
+            
+                
+                    <a href="../cassandra/cassandra_cache.html">
+                        <i class="fa fa-check"></i>
+                        
+                            <b>1.3.</b>
+                        
+                         Cassandra Cache
+                    </a>
+                
+            
+            
+        </li>
+    
+
+            </ul>
+            
+        </li>
+    
+        
+        <li class="chapter " data-level="2" data-path="cassandra/README">
+            
+                
+                    <a href="../cassandra/README">
+                        <i class="fa fa-check"></i>
+                        
+                            <b>2.</b>
+                        
+                         Cassandra写入过程
                     </a>
                 
             
@@ -167,10 +239,61 @@
                 <div class="page-inner">
                 
                 
-                    <section class="normal" id="section-gitbook_82">
+                    <section class="normal" id="section-gitbook_243">
                     
-                        <h1 id="cassandra">启动Cassandra</h1>
-<h3 id="databasedescritor">DatabaseDescritor初始化</h3>
+                        <h1 id="cassandra">Cassandra查询过程</h1>
+<h2 id="bloom-filter">对bloom filter实现说明</h2>
+<h3 id="service">service</h3>
+<ul>
+<li><p><code>StorageService</code> <br/>
+重要参数<br/></p>
+<pre><code class="lang-java">TokenMetadata tokenMetadata; <span class="hljs-comment">//管理 the token/endpoint metadata 信息 */</span>
+</code></pre>
+</li>
+</ul>
+<h3 id="net">net</h3>
+<ul>
+<li><p><code>MessagingService</code> <br/>
+重要参数<br/></p>
+<pre><code class="lang-java">EnumMap&lt;Verb, IVerbHandler&gt;(Verb.class) verbHandlers; <span class="hljs-comment">//通过verb查询messaging handlers</span>
+SimpleCondition listenGate; <span class="hljs-comment">//</span>
+NonBlockingHashMap&lt;InetAddress, OutboundTcpConnectionPool&gt; connectionManagers;
+ArrayList&lt;SocketThread&gt; socketThreads;
+ExpiringMap&lt;Integer, CallbackInfo&gt; callbacks; <span class="hljs-comment">//配置参数DatabaseDescriptor.getMinRpcTimeout</span>
+</code></pre>
+</li>
+</ul>
+<h3 id="locator">locator</h3>
+<ul>
+<li><p><code>AbstractReplicationStrategy</code> 所有replication strategies的父类 <br/></p>
+<pre><code class="lang-java">String keyspaceName;
+Keyspace keyspace;
+Map&lt;String, String&gt; configOptions;
+TokenMetadata tokenMetadata;
+IEndpointSnitch snitch;
+NonBlockingHashMap&lt;Token, ArrayList&lt;InetAddress&gt;&gt; cachedEndpoints;
+</code></pre>
+</li>
+</ul>
+<h3 id="sstable">sstable</h3>
+<ul>
+<li><p><code>SStable</code>, 在SequenceFile之上创建这个类，按顺序存放数据，但排序方式取决于application. 一个单独的索引文件将被维护，包含SSTable　keys和在SSTable中的偏移位置. 在SSTable被打开时，每隔indexInterval的key会被读到内存。每个SSTable 为keys保存一份bloom filter文件.</p>
+<pre><code class="lang-java"> Descriptor descriptor;
+ Set&lt;Component&gt; components;
+ CFMetaData metadata;
+ IPartitioner partitioner;
+ <span class="hljs-keyword">boolean</span> compression;
+ DecoratedKey first, last;
+</code></pre>
+</li>
+<li><p><code>SSTableReader extends SSTable</code>, 通过Keyspace.onStart打开SSTableReaders; 在此之后通过SSTableWriter.renameAndOpen被创建. 不要在存在的SSTable文件上re-call　open()，使用ColumnFamilyStore保存的references来使用.</p>
+<pre><code class="lang-java"> SegmentedFile ifile, dfile;
+ IndexSummary indexSummary;
+ IFilter bf;
+ StatsMetadata sstableMetadata;
+</code></pre>
+</li>
+</ul>
 
                     
                     </section>
@@ -181,8 +304,10 @@
         </div>
 
         
-        <a href="../index.html" class="navigation navigation-prev navigation-unique" aria-label="Previous page: Introduction"><i class="fa fa-angle-left"></i></a>
+        <a href="../index.html" class="navigation navigation-prev " aria-label="Previous page: 启动Cassandra"><i class="fa fa-angle-left"></i></a>
         
+        
+        <a href="../cassandra/columnfamilystore.html" class="navigation navigation-next " aria-label="Next page: 创建ColumnFamilyStore"><i class="fa fa-angle-right"></i></a>
         
     </div>
 </div>

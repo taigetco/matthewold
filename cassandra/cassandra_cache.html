@@ -4,7 +4,7 @@
     <head>
         
         <meta charset="UTF-8">
-        <title>Glossary | Cassandra</title>
+        <title>Cassandra Cache | Cassandra</title>
         <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
         <meta name="description" content="">
         <meta name="generator" content="GitBook 1.0.3">
@@ -12,17 +12,16 @@
         <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
         <meta name="apple-mobile-web-app-capable" content="yes">
         <meta name="apple-mobile-web-app-status-bar-style" content="black">
-        <link rel="apple-touch-icon-precomposed" sizes="152x152" href="gitbook/images/apple-touch-icon-precomposed-152.png">
-        <link rel="shortcut icon" href="gitbook/images/favicon.ico" type="image/x-icon">
+        <link rel="apple-touch-icon-precomposed" sizes="152x152" href="../gitbook/images/apple-touch-icon-precomposed-152.png">
+        <link rel="shortcut icon" href="../gitbook/images/favicon.ico" type="image/x-icon">
         
     
     
     
+    <link rel="next" href="../cassandra/README" />
     
     
-
-    
-    
+    <link rel="prev" href="../cassandra/bloom_filter.html" />
     
 
         
@@ -30,11 +29,11 @@
     <body>
         
         
-<link rel="stylesheet" href="gitbook/style.css">
+<link rel="stylesheet" href="../gitbook/style.css">
 
 
         
-    <div class="book"  data-level="" data-basepath="." data-revision="1417672279190">
+    <div class="book"  data-level="1.3" data-basepath=".." data-revision="1417672279190">
     
 
 <div class="book-summary">
@@ -55,7 +54,7 @@
         <li class="chapter " data-level="0" data-path="index.html">
             
                 
-                    <a href="./index.html">
+                    <a href="../index.html">
                         <i class="fa fa-check"></i>
                         
                          启动Cassandra
@@ -69,7 +68,7 @@
         <li class="chapter " data-level="1" data-path="cassandra/README.html">
             
                 
-                    <a href="./cassandra/README.html">
+                    <a href="../cassandra/README.html">
                         <i class="fa fa-check"></i>
                         
                             <b>1.</b>
@@ -86,7 +85,7 @@
         <li class="chapter " data-level="1.1" data-path="cassandra/columnfamilystore.html">
             
                 
-                    <a href="./cassandra/columnfamilystore.html">
+                    <a href="../cassandra/columnfamilystore.html">
                         <i class="fa fa-check"></i>
                         
                             <b>1.1.</b>
@@ -102,7 +101,7 @@
         <li class="chapter " data-level="1.2" data-path="cassandra/bloom_filter.html">
             
                 
-                    <a href="./cassandra/bloom_filter.html">
+                    <a href="../cassandra/bloom_filter.html">
                         <i class="fa fa-check"></i>
                         
                             <b>1.2.</b>
@@ -115,10 +114,10 @@
         </li>
     
         
-        <li class="chapter " data-level="1.3" data-path="cassandra/cassandra_cache.html">
+        <li class="chapter active" data-level="1.3" data-path="cassandra/cassandra_cache.html">
             
                 
-                    <a href="./cassandra/cassandra_cache.html">
+                    <a href="../cassandra/cassandra_cache.html">
                         <i class="fa fa-check"></i>
                         
                             <b>1.3.</b>
@@ -139,7 +138,7 @@
         <li class="chapter " data-level="2" data-path="cassandra/README">
             
                 
-                    <a href="./cassandra/README">
+                    <a href="../cassandra/README">
                         <i class="fa fa-check"></i>
                         
                             <b>2.</b>
@@ -232,33 +231,49 @@
     <!-- Title -->
     <h1>
         <i class="fa fa-circle-o-notch fa-spin"></i>
-        <a href="./" >Cassandra</a>
+        <a href="../" >Cassandra</a>
     </h1>
 </div>
 
             <div class="page-wrapper" tabindex="-1">
                 <div class="page-inner">
                 
+                
+                    <section class="normal" id="section-gitbook_245">
+                    
+                        <h1 id="cassandra-cache">Cassandra Cache</h1>
+<p>cache由三种类型，KeyCache，RowCache，CounterCache, 默认只进行KeyCache. 在初始化ColumnFamilyStore时，会load已经save的KeyCache
+```java
+//ColumnFamilyStore
+if (caching.keyCache.isEnabled())
+    CacheService.instance.keyCache.loadSaved(this);</p>
 
-
+                    
+                    </section>
+                
+                
                 </div>
             </div>
         </div>
 
         
+        <a href="../cassandra/bloom_filter.html" class="navigation navigation-prev " aria-label="Previous page: Bloom Filter实现"><i class="fa fa-angle-left"></i></a>
+        
+        
+        <a href="../cassandra/README" class="navigation navigation-next " aria-label="Next page: Cassandra写入过程"><i class="fa fa-angle-right"></i></a>
         
     </div>
 </div>
 
         
-<script src="gitbook/app.js"></script>
+<script src="../gitbook/app.js"></script>
 
     
     <script src="https://cdn.mathjax.org/mathjax/2.4-latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
     
 
     
-    <script src="gitbook/plugins/gitbook-plugin-mathjax/plugin.js"></script>
+    <script src="../gitbook/plugins/gitbook-plugin-mathjax/plugin.js"></script>
     
 
 <script>

@@ -4,7 +4,7 @@
     <head>
         
         <meta charset="UTF-8">
-        <title>Glossary | Cassandra</title>
+        <title>Bloom Filter实现 | Cassandra</title>
         <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
         <meta name="description" content="">
         <meta name="generator" content="GitBook 1.0.3">
@@ -12,17 +12,16 @@
         <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
         <meta name="apple-mobile-web-app-capable" content="yes">
         <meta name="apple-mobile-web-app-status-bar-style" content="black">
-        <link rel="apple-touch-icon-precomposed" sizes="152x152" href="gitbook/images/apple-touch-icon-precomposed-152.png">
-        <link rel="shortcut icon" href="gitbook/images/favicon.ico" type="image/x-icon">
+        <link rel="apple-touch-icon-precomposed" sizes="152x152" href="../gitbook/images/apple-touch-icon-precomposed-152.png">
+        <link rel="shortcut icon" href="../gitbook/images/favicon.ico" type="image/x-icon">
         
     
     
     
+    <link rel="next" href="../cassandra/cassandra_cache.html" />
     
     
-
-    
-    
+    <link rel="prev" href="../cassandra/columnfamilystore.html" />
     
 
         
@@ -30,11 +29,11 @@
     <body>
         
         
-<link rel="stylesheet" href="gitbook/style.css">
+<link rel="stylesheet" href="../gitbook/style.css">
 
 
         
-    <div class="book"  data-level="" data-basepath="." data-revision="1417672279190">
+    <div class="book"  data-level="1.2" data-basepath=".." data-revision="1417672279190">
     
 
 <div class="book-summary">
@@ -55,7 +54,7 @@
         <li class="chapter " data-level="0" data-path="index.html">
             
                 
-                    <a href="./index.html">
+                    <a href="../index.html">
                         <i class="fa fa-check"></i>
                         
                          启动Cassandra
@@ -69,7 +68,7 @@
         <li class="chapter " data-level="1" data-path="cassandra/README.html">
             
                 
-                    <a href="./cassandra/README.html">
+                    <a href="../cassandra/README.html">
                         <i class="fa fa-check"></i>
                         
                             <b>1.</b>
@@ -86,7 +85,7 @@
         <li class="chapter " data-level="1.1" data-path="cassandra/columnfamilystore.html">
             
                 
-                    <a href="./cassandra/columnfamilystore.html">
+                    <a href="../cassandra/columnfamilystore.html">
                         <i class="fa fa-check"></i>
                         
                             <b>1.1.</b>
@@ -99,10 +98,10 @@
         </li>
     
         
-        <li class="chapter " data-level="1.2" data-path="cassandra/bloom_filter.html">
+        <li class="chapter active" data-level="1.2" data-path="cassandra/bloom_filter.html">
             
                 
-                    <a href="./cassandra/bloom_filter.html">
+                    <a href="../cassandra/bloom_filter.html">
                         <i class="fa fa-check"></i>
                         
                             <b>1.2.</b>
@@ -118,7 +117,7 @@
         <li class="chapter " data-level="1.3" data-path="cassandra/cassandra_cache.html">
             
                 
-                    <a href="./cassandra/cassandra_cache.html">
+                    <a href="../cassandra/cassandra_cache.html">
                         <i class="fa fa-check"></i>
                         
                             <b>1.3.</b>
@@ -139,7 +138,7 @@
         <li class="chapter " data-level="2" data-path="cassandra/README">
             
                 
-                    <a href="./cassandra/README">
+                    <a href="../cassandra/README">
                         <i class="fa fa-check"></i>
                         
                             <b>2.</b>
@@ -232,33 +231,103 @@
     <!-- Title -->
     <h1>
         <i class="fa fa-circle-o-notch fa-spin"></i>
-        <a href="./" >Cassandra</a>
+        <a href="../" >Cassandra</a>
     </h1>
 </div>
 
             <div class="page-wrapper" tabindex="-1">
                 <div class="page-inner">
                 
+                
+                    <section class="normal" id="section-gitbook_244">
+                    
+                        <h1 id="bloom-filter">Bloom Filter实现</h1>
+<p><img src="images/bloomfilter_hierarchy.png" alt="Bloom Filter 类结构图"></p>
+<ol>
+<li><p>根据CFMetaData中的bloomFilterFpChance和Key的个数，计算出<code>BloomSpecification</code>从而创建BloomFilter． FilterFactory创建BloomFilter, 对于OffHeap内存的创建，修改, 获取，参考OffHeap一节</p>
+<pre><code class="lang-java"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">BloomSpecification</span>
+</span>{
+  <span class="hljs-keyword">final</span> <span class="hljs-keyword">int</span> K; <span class="hljs-comment">// number of hash functions.</span>
+  <span class="hljs-keyword">final</span> <span class="hljs-keyword">int</span> bucketsPerElement;
+}
 
+<span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> IFilter <span class="hljs-title">getFilter</span><span class="hljs-params">(<span class="hljs-keyword">long</span> numElements, <span class="hljs-keyword">double</span> maxFalsePosProbability, <span class="hljs-keyword">boolean</span> offheap)</span>
+</span>{
+  <span class="hljs-keyword">int</span> bucketsPerElement = BloomCalculations.maxBucketsPerElement(numElements);
+  BloomCalculations.BloomSpecification spec = BloomCalculations.computeBloomSpec(bucketsPerE  lement, maxFalsePosProbability);
+  <span class="hljs-function"><span class="hljs-keyword">return</span> <span class="hljs-title">createFilter</span><span class="hljs-params">(spec.K, numElements, spec.bucketsPerElement, offheap)</span></span>;
+}
 
+<span class="hljs-function"><span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> IFilter <span class="hljs-title">createFilter</span><span class="hljs-params">(<span class="hljs-keyword">int</span> hash, <span class="hljs-keyword">long</span> numElements, <span class="hljs-keyword">int</span> bucketsPer, <span class="hljs-keyword">boolean</span> offheap)</span>
+</span>{
+ <span class="hljs-keyword">long</span> numBits = (numElements * bucketsPer) + BITSET_EXCESS;
+ IBitSet bitset = offheap ? <span class="hljs-keyword">new</span> OffHeapBitSet(numBits) : <span class="hljs-keyword">new</span> OpenBitSet(numBits);
+ <span class="hljs-function"><span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> <span class="hljs-title">Murmur3BloomFilter</span><span class="hljs-params">(hash, bitset)</span></span>;
+}
+</code></pre>
+</li>
+<li><p>在BloomFilter中对每个Key计算hash值，存入OffHeapBitSet.</p>
+<pre><code class="lang-java"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">add</span><span class="hljs-params">(ByteBuffer key)</span>
+</span>{
+  <span class="hljs-keyword">long</span>[] indexes = indexes(key);
+  <span class="hljs-keyword">for</span> (<span class="hljs-keyword">int</span> i = <span class="hljs-number">0</span>; i &lt; hashCount; i++)
+  {
+      bitset.set(indexes[i]);
+  }
+}
+
+<span class="hljs-comment">// note that this method uses the threadLocal that may be longer than hashCount</span>
+<span class="hljs-comment">// to avoid generating a lot of garbage since stack allocation currently does not support stores</span>
+<span class="hljs-comment">// (CASSANDRA-6609).  it returns the array so that the caller does not need to perform</span>
+<span class="hljs-comment">// a second threadlocal lookup.</span>
+<span class="hljs-keyword">private</span> <span class="hljs-keyword">long</span>[] indexes(ByteBuffer key)
+{
+   <span class="hljs-comment">// we use the same array both for storing the hash result, and for storing the indexes we return,</span>
+   <span class="hljs-comment">// so that we do not need to allocate two arrays.</span>
+   <span class="hljs-keyword">long</span>[] indexes = reusableIndexes.get();
+   hash(key, key.position(), key.remaining(), <span class="hljs-number">0</span>L, indexes);
+   setIndexes(indexes[<span class="hljs-number">0</span>], indexes[<span class="hljs-number">1</span>], hashCount, bitset.capacity(), indexes);
+   <span class="hljs-keyword">return</span> indexes;
+}
+
+<span class="hljs-function"><span class="hljs-keyword">private</span> <span class="hljs-keyword">void</span> <span class="hljs-title">setIndexes</span><span class="hljs-params">(<span class="hljs-keyword">long</span> base, <span class="hljs-keyword">long</span> inc, <span class="hljs-keyword">int</span> count, <span class="hljs-keyword">long</span> max, <span class="hljs-keyword">long</span>[] results)</span>
+</span>{
+  <span class="hljs-keyword">for</span> (<span class="hljs-keyword">int</span> i = <span class="hljs-number">0</span>; i &lt; count; i++)
+  {
+      results[i] = FBUtilities.abs(base % max);
+      base += inc;
+  }
+}
+</code></pre>
+</li>
+</ol>
+
+                    
+                    </section>
+                
+                
                 </div>
             </div>
         </div>
 
         
+        <a href="../cassandra/columnfamilystore.html" class="navigation navigation-prev " aria-label="Previous page: 创建ColumnFamilyStore"><i class="fa fa-angle-left"></i></a>
+        
+        
+        <a href="../cassandra/cassandra_cache.html" class="navigation navigation-next " aria-label="Next page: Cassandra Cache"><i class="fa fa-angle-right"></i></a>
         
     </div>
 </div>
 
         
-<script src="gitbook/app.js"></script>
+<script src="../gitbook/app.js"></script>
 
     
     <script src="https://cdn.mathjax.org/mathjax/2.4-latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
     
 
     
-    <script src="gitbook/plugins/gitbook-plugin-mathjax/plugin.js"></script>
+    <script src="../gitbook/plugins/gitbook-plugin-mathjax/plugin.js"></script>
     
 
 <script>
